@@ -16,9 +16,10 @@ pros::Controller master(pros::E_CONTROLLER_MASTER);
 pros::Imu gyro(21);
 pros::Vision vs(10);
 
+int onetile = 1719;
 bool runauton=true;
-Train rt = Train(720,r1,r2);
-Train lt = Train(720,l1,l2);
+Train rt = Train(onetile,r1,r2);
+Train lt = Train(onetile,l1,l2);
 Lift lift = Lift(1000, lift1, lift2);
 Intake intake = Intake(il,ir);
 bool sp = false;
@@ -169,55 +170,161 @@ void rotatebaserpm(int *speeds) {
 	rt.rpm(speeds[1]);
 }
 
-bool keepturn(int deg, int err) {
+void constgyro() {
+	while(true) {
+		pros::lcd::set_text(4,std::to_string(getgyro()));
+	}
+}
+
+/*bool keepturn(int deg, int err) {
 	if(getgyro() > deg+err || getgyro()<deg-err) {
 		return true;
 	}
 	return false;
 }
+*/
 
-void turnspeedcalc(int tt, int speed) {
+void stopbase() {
+	lt.stop();
+	rt.stop();
+}
+
+bool turn(int tt, int turndeg, int speed, int err) {
 	int ct = tt-getgyro();
-	if(tt<0) {tt+=360;}
+	int ms = int(float(speed)*0.2);
+	if(ct<0) {ct+=360;}
 
-	if(tt<=180) {
-		lt.rpm(int(float(ct)/tt)*speed+10);
-		rt.rpm(int(-(float(ct)/tt)*speed-10));
+	if(ct<=180) {
+		lt.rpm(int(float(ct)/float(turndeg)*(speed)+ms));
+		rt.rpm(-int(float(ct)/float(turndeg)*(speed)+ms));
 	} else {
-		rt.rpm(int(-(float(ct-180)/tt)*speed-10));
-		lt.rpm(int(float(ct-180)/tt)*speed+10);
-	};
+		lt.rpm(-int(float(ct)/float(turndeg)*(speed)+ms));
+		rt.rpm(int(float(ct)/float(turndeg)*(speed)+ms));
+	}
+
+	if(abs(ct)<err) {
+		return false;
+		stopbase();
+	} else {
+		return true;
+	}
 
 }
 
-int func(int deg) {
-	int g = deg-getgyro();
-	if(g<0) {g+=360;}
-	return g;
+
+bool drive(float tiles, int speed, int err) {
+	int tt = tiles*onetile;
+	int ct = abs(tt-lt.getPos());
+	int ms = int(float(speed)*0.2);
+
+	if(tt>0) {
+	lt.rpm(int(float(ct)/float(tt)*(speed)+ms));
+	rt.rpm(int(float(ct)/float(tt)*(speed)+ms));
+} else {
+	lt.rpm(int(float(ct)/float(tt)*(speed)-ms));
+	rt.rpm(int(float(ct)/float(tt)*(speed)-ms));
 }
+	if(abs(ct)<=err) {
+		return false;
+		rt.resetEncoders();
+		lt.resetEncoders();
+		stopbase();
+	} else {
+		return true;
+	}
+}
+
+
 
 void autonomous() {
 if(runauton) {
-	pros::delay(3000);
-	movebasetile(1,100);
+	while(gyro.is_calibrating()) {
+		pros::delay(3);
+	}
+	constgyro();
+
+	while(drive(1.5,150,50)) {pros::delay(1);}
+	pros::delay(250);
+
+	while(turn(135,135,100,4)) {pros::delay(1);}
+	pros::delay(250);
+
+	while(drive(1.41,150,50)) {pros::delay(1);}
+	pros::delay(250);
+
+
+	/*
+
+	THEORETICAL SCORING OPERATIONS
+
+	*/
+
+	lift.spin(600);
 	pros::delay(1000);
-	while(!(rt.stopped() && lt.stopped())) {
-		pros::delay(1);
-	}
+	intake.spin(200);
+	pros::delay(500);
+	intake.spin(-200);
+	lift.spin(0);
 
-	int tt = func(90);
-	while(keepturn(90,1)) {
-		turnspeedcalc(tt,150);
-		pros::lcd::set_text(3,std::to_string(getgyro()));
-		pros::delay(1);
-	}
 
-	/*while(true) {
-		pros::lcd::set_text(3,std::to_string(getgyro()));
-	}*/
-	//pros::delay(2000);
-	lt.rpm(0);
-	rt.rpm(0);
+	while(drive(-1.41,150,50)) {pros::delay(1);}
+	intake.spin(0);
+	pros::delay(250);
+
+	while(turn(270, 135, 100, 4)) {pros::delay(1);}
+	pros::delay(250);
+
+	while(drive(1.5,150,50)) {pros::delay(1);}
+	pros::delay(250);
+
+	while(turn(180, 90, 100, 4)) {pros::delay(1);}
+	pros::delay(250);
+
+	while(drive(1,150,50)) {pros::delay(1);}
+	pros::delay(250);
+
+
+	lift.spin(600);
+	pros::delay(1000);
+	intake.spin(200);
+	pros::delay(500);
+	intake.spin(-200);
+	lift.spin(0);
+
+
+	while(drive(-1,150,50)) {pros::delay(1);}
+	pros::delay(250);
+
+	while(turn(270,90,100,4)) {pros::delay(1);}
+	pros::delay(250);
+
+	intake.spin(200);
+	while(drive(3,150,50)) {pros::delay(1);}
+	lift.spin(600);
+	pros::delay(250);
+	lift.spin(0);
+
+	while(drive(-1.5,150,50)) {pros::delay(1);}
+	pros::delay(250);
+
+	while(turn(315,45,100,4)) {pros::delay(1);}
+	pros::delay(250);
+
+	while(drive(1.41,150,50)) {pros::delay(1);}
+	pros::delay(250);
+
+	lift.spin(600);
+	pros::delay(1000);
+	intake.spin(200);
+	pros::delay(500);
+	intake.spin(-200);
+	lift.spin(-600);
+
+
+	while(drive(-1.41,150,50)) {pros::delay(1);}
+	pros::delay(250);
+
+
 
 
 
@@ -254,25 +361,9 @@ intake.spin(0);
 	lt.rpm(0);
 	rt.rpm(0);
 	pros::delay(20000);
-	/*
-	lift.spin(-600);
-	intake.spin(200);
-	pros::delay(1500);
-	lift.spin(0);
-	intake.spin(0);
-	*/
-}
-/*
-movebasetile(2,200);
 
-rotatebase(80,135);
-intake.spin(200);
-movebasetile(2,200);
-lift.spin(100);
-pros::delay(2000);
-intake.spin(0);
-lift.spin(0);
-*/
+}
+
 }
 
 /**

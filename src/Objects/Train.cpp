@@ -53,7 +53,7 @@ public:
   }
 
   int getPos() {
-    return (int)((fm.get_position()+bm.get_position())/2);
+    return (int)fm.get_position();
   }
 
   void resetEncoders() {

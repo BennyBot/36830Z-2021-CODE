@@ -30,11 +30,11 @@
             "-funwind-tables",
             "--std=gnu++17",
             "-o",
-            "bin/Objects/Dispense.cpp.o",
-            "src\\Objects\\Dispense.cpp"
+            "bin/Objects/Lift.cpp.o",
+            "src\\Objects\\Lift.cpp"
         ],
-        "directory": "C:\\jhgjhghjghj",
-        "file": "src\\Objects\\Dispense.cpp"
+        "directory": "C:\\36830Z-2021-CODE",
+        "file": "src\\Objects\\Lift.cpp"
     },
     {
         "arguments": [
@@ -52,7 +52,7 @@
             "-isystemc:\\program files\\pros\\toolchain\\usr\\bin\\../lib/gcc/arm-none-eabi/7.2.1/include-fixed",
             "-isystemc:\\program files\\pros\\toolchain\\usr\\bin\\../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/include",
             "-iquote./include",
-            "-iquote./include/Objects/",
+            "-iquote./include/./",
             "-mcpu=cortex-a9",
             "-mfpu=neon-fp16",
             "-mfloat-abi=softfp",
@@ -67,11 +67,11 @@
             "-funwind-tables",
             "--std=gnu++17",
             "-o",
-            "bin/Objects/Lift.cpp.o",
-            "src\\Objects\\Lift.cpp"
+            "bin/main.cpp.o",
+            "src\\main.cpp"
         ],
-        "directory": "C:\\jhgjhghjghj",
-        "file": "src\\Objects\\Lift.cpp"
+        "directory": "C:\\36830Z-2021-CODE",
+        "file": "src\\main.cpp"
     },
     {
         "arguments": [
@@ -107,7 +107,7 @@
             "bin/Objects/Train.cpp.o",
             "src\\Objects\\Train.cpp"
         ],
-        "directory": "C:\\jhgjhghjghj",
+        "directory": "C:\\36830Z-2021-CODE",
         "file": "src\\Objects\\Train.cpp"
     },
     {
@@ -144,7 +144,7 @@
             "bin/Objects/Intake.cpp.o",
             "src\\Objects\\Intake.cpp"
         ],
-        "directory": "C:\\jhgjhghjghj",
+        "directory": "C:\\36830Z-2021-CODE",
         "file": "src\\Objects\\Intake.cpp"
     },
     {
@@ -163,7 +163,7 @@
             "-isystemc:\\program files\\pros\\toolchain\\usr\\bin\\../lib/gcc/arm-none-eabi/7.2.1/include-fixed",
             "-isystemc:\\program files\\pros\\toolchain\\usr\\bin\\../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/include",
             "-iquote./include",
-            "-iquote./include/./",
+            "-iquote./include/Objects/",
             "-mcpu=cortex-a9",
             "-mfpu=neon-fp16",
             "-mfloat-abi=softfp",
@@ -178,10 +178,10 @@
             "-funwind-tables",
             "--std=gnu++17",
             "-o",
-            "bin/main.cpp.o",
-            "src\\main.cpp"
+            "bin/Objects/Dispense.cpp.o",
+            "src\\Objects\\Dispense.cpp"
         ],
-        "directory": "C:\\jhgjhghjghj",
-        "file": "src\\main.cpp"
+        "directory": "C:\\36830Z-2021-CODE",
+        "file": "src\\Objects\\Dispense.cpp"
     }
 ]
