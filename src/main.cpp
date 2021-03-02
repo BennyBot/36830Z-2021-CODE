@@ -16,7 +16,10 @@ pros::Controller master(pros::E_CONTROLLER_MASTER);
 pros::Imu gyro(21);
 pros::Vision vs(10);
 
+
+
 int onetile = 1719;
+
 bool runauton=true;
 Train rt = Train(onetile,r1,r2);
 Train lt = Train(onetile,l1,l2);
@@ -160,7 +163,7 @@ void rotatebase(int speed, int deg) {
 
 	while(getgyro() < deg) {
 		pros::delay(3);
-		pros::lcd::set_text(4, std::to_string(getgyro()));
+		//pros::lcd::set_text(4, std::to_string(getgyro()));
 	}
 	movebaserpm(0,0);
 }
@@ -172,7 +175,7 @@ void rotatebaserpm(int *speeds) {
 
 void constgyro() {
 	while(true) {
-		pros::lcd::set_text(4,std::to_string(getgyro()));
+		//pros::lcd::set_text(4,std::to_string(getgyro()));
 	}
 }
 
@@ -202,9 +205,14 @@ bool turn(int tt, int turndeg, int speed, int err) {
 		rt.rpm(int(float(ct)/float(turndeg)*(speed)+ms));
 	}
 
+	//pros::lcd::set_text(1,"LEFT ENCODER: " + std::to_string(lt.getPos()));
+
 	if(abs(ct)<err) {
-		return false;
+		rt.resetEncoders();
+		lt.resetEncoders();
 		stopbase();
+		return false;
+
 	} else {
 		return true;
 	}
@@ -217,6 +225,10 @@ bool drive(float tiles, int speed, int err) {
 	int ct = abs(tt-lt.getPos());
 	int ms = int(float(speed)*0.2);
 
+
+	//pros::lcd::set_text(1,"LEFT ENCODER: " + std::to_string(lt.getPos()));
+
+
 	if(tt>0) {
 	lt.rpm(int(float(ct)/float(tt)*(speed)+ms));
 	rt.rpm(int(float(ct)/float(tt)*(speed)+ms));
@@ -225,10 +237,10 @@ bool drive(float tiles, int speed, int err) {
 	rt.rpm(int(float(ct)/float(tt)*(speed)-ms));
 }
 	if(abs(ct)<=err) {
-		return false;
 		rt.resetEncoders();
 		lt.resetEncoders();
 		stopbase();
+		return false;
 	} else {
 		return true;
 	}
@@ -238,18 +250,23 @@ bool drive(float tiles, int speed, int err) {
 
 void autonomous() {
 if(runauton) {
-	while(gyro.is_calibrating()) {
-		pros::delay(3);
-	}
-	constgyro();
+	pros::delay(3000);
 
+	lift.unload(600);
+	pros::delay(1000);
+	intake.spin(200);
+	pros::delay(500);
+	lift.spin(0);
 	while(drive(1.5,150,50)) {pros::delay(1);}
 	pros::delay(250);
 
-	while(turn(135,135,100,4)) {pros::delay(1);}
+	lift.spin(0);
+	intake.spin(0);
+
+	while(turn(135,135,150,4)) {pros::delay(1);}
 	pros::delay(250);
 
-	while(drive(1.41,150,50)) {pros::delay(1);}
+	while(drive(1.26,150,50)) {pros::delay(1);}
 	pros::delay(250);
 
 
@@ -260,24 +277,28 @@ if(runauton) {
 	*/
 
 	lift.spin(600);
-	pros::delay(1000);
+	pros::delay(700);
 	intake.spin(200);
 	pros::delay(500);
 	intake.spin(-200);
-	lift.spin(0);
+	lift.spin(-600);
 
 
-	while(drive(-1.41,150,50)) {pros::delay(1);}
+	while(drive(-1.1,150,50)) {pros::delay(1);}
 	intake.spin(0);
+	lift.spin(0);
 	pros::delay(250);
 
-	while(turn(270, 135, 100, 4)) {pros::delay(1);}
+	while(turn(270, 135, 50, 4)) {pros::delay(1);}
 	pros::delay(250);
 
-	while(drive(1.5,150,50)) {pros::delay(1);}
+	intake.spin(200);
+	while(drive(1.2,100,50)) {pros::delay(1);}
 	pros::delay(250);
 
-	while(turn(180, 90, 100, 4)) {pros::delay(1);}
+	intake.spin(0);
+
+	while(turn(195, 75, 100, 4)) {pros::delay(1);}
 	pros::delay(250);
 
 	while(drive(1,150,50)) {pros::delay(1);}
@@ -285,32 +306,33 @@ if(runauton) {
 
 
 	lift.spin(600);
-	pros::delay(1000);
+	pros::delay(700);
 	intake.spin(200);
-	pros::delay(500);
+	pros::delay(900);
 	intake.spin(-200);
+	lift.spin(-600);
+
+
+	while(drive(-0.25,150,50)) {pros::delay(1);}
 	lift.spin(0);
-
-
-	while(drive(-1,150,50)) {pros::delay(1);}
 	pros::delay(250);
 
-	while(turn(270,90,100,4)) {pros::delay(1);}
+	while(turn(270,90,50,4)) {pros::delay(1);}
 	pros::delay(250);
 
 	intake.spin(200);
-	while(drive(3,150,50)) {pros::delay(1);}
+	while(drive(2.2,150,50)) {pros::delay(1);}
 	lift.spin(600);
 	pros::delay(250);
 	lift.spin(0);
 
-	while(drive(-1.5,150,50)) {pros::delay(1);}
+	while(drive(-0.5,150,50)) {pros::delay(1);}
 	pros::delay(250);
 
-	while(turn(315,45,100,4)) {pros::delay(1);}
+	while(turn(235,35,50,4)) {pros::delay(1);}
 	pros::delay(250);
 
-	while(drive(1.41,150,50)) {pros::delay(1);}
+	while(drive(.8,150,50)) {pros::delay(1);}
 	pros::delay(250);
 
 	lift.spin(600);
@@ -402,37 +424,48 @@ void opcontrol() {
 */
 
 	//initialize();
+	int prevball = 255;
 	while (true) {
 
 
 		pros::vision_object_s_t obj = vs.get_by_size(0);
 		int ballcol = obj.signature;
 		int ballsize = 0;
-		if(obj.width>170) {
-			ballsize= 300;
-		}
 
-		if(ballsize==0) {
-			ballcol=255;
-		}
-
-		pros::lcd::set_text(3, std::to_string(ballsize));
-		pros::lcd::set_text(2, std::to_string(ballcol));
 		if(team_color == 255) {
 			team_color = ballcol;
 		}
 
-		if(ballcol !=255 && ballcol!=team_color) {
-			intake.alternator=-1;
-		} else if(ballcol!=255 && ballcol==team_color) {
-			intake.alternator=1;
+
+		if(obj.width>50) {
+			ballsize= 300;
+		} else {
+			ballcol=255;
+		}
+
+		pros::lcd::set_text(1, "LEFT TRAIN" + std::to_string(lt.getPos()));
+		pros::lcd::set_text(2, "RIGHT TRAIN" + std::to_string(rt.getPos()));
+
+		pros::lcd::set_text(4, "TEAM COLOR: " + std::to_string(team_color));
+		pros::lcd::set_text(5, "COLOR: " + std::to_string(ballcol));
+
+		//pros::lcd::set_text(3, std::to_string(ballsize));
+		//pros::lcd::set_text(2, std::to_string(ballcol));
+
+		if(ballcol != 255) {
+			prevball=ballcol;
+		}
+		if(prevball !=255 && prevball!=team_color) {
+			lift.mult=-1;
+		} else if(prevball!=255 && prevball==team_color) {
+			lift.mult=1;
 		}
 
 		int facing = (int(gyro.get_rotation()) % 360);
 		if(facing < 0) {
 			facing += 360;
 		}
-		pros::lcd::set_text(1, std::to_string(facing));
+		//pros::lcd::set_text(1, std::to_string(facing));
 		int lefty = master.get_analog(ANALOG_LEFT_Y)*2;
 		int leftx = master.get_analog(ANALOG_LEFT_X)*1.5;
 
@@ -517,14 +550,15 @@ void opcontrol() {
 */
 
 
-		if(master.get_digital(DIGITAL_R1)) {
+		if(master.get_digital(DIGITAL_R1) || master.get_digital(DIGITAL_R2)) {
+			lift.autospin(600);
+		} else if(master.get_digital(DIGITAL_UP)) {
 			lift.spin(600);
-		} else if(master.get_digital(DIGITAL_R2)) {
+		} else if(master.get_digital(DIGITAL_DOWN)) {
 			lift.spin(-600);
 		} else {
 			lift.spin(0);
 		}
-
 
 		if(master.get_digital(DIGITAL_L1)) {
 			intake.spin(200);
@@ -535,6 +569,12 @@ void opcontrol() {
 		}
 
 		pros::delay(1);
+
+
+		if(master.get_digital(DIGITAL_Y)) {
+		lt.resetEncoders();
+		rt.resetEncoders();
+	}
 	}
 
 }
