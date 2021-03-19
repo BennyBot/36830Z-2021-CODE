@@ -246,7 +246,35 @@ bool drive(float tiles, int speed, int err) {
 	}
 }
 
+int get_ball_color() {
+	pros::vision_object_s_t obj = vs.get_by_size(0);
+	if(obj.width>50) {
+		return obj.signature;
+	}
+	return 255;
+}
 
+
+void tower_auton(int ispeed, int lspeed) {
+	//until intake blue ball
+	intake.spin(ispeed);
+	lift.mult=1;
+	while(get_ball_color()!=1) {
+		lift.autospin(lspeed);
+	}
+
+	lift.mult=-1;
+	while(get_ball_color()!=2) {
+		lift.autospin(lspeed);
+	}
+
+	lift.spin(-lspeed);
+	intake.spin(-ispeed);
+
+	pros::delay(500);
+	intake.spin(0);
+	lift.spin(0);
+}
 
 void autonomous() {
 if(runauton) {
@@ -257,11 +285,11 @@ if(runauton) {
 	intake.spin(200);
 	pros::delay(500);
 	lift.spin(0);
+	intake.spin(0);
 	while(drive(1.5,150,50)) {pros::delay(1);}
 	pros::delay(250);
 
-	lift.spin(0);
-	intake.spin(0);
+
 
 	while(turn(135,135,150,4)) {pros::delay(1);}
 	pros::delay(250);
@@ -276,13 +304,7 @@ if(runauton) {
 
 	*/
 
-	lift.spin(600);
-	pros::delay(700);
-	intake.spin(200);
-	pros::delay(500);
-	intake.spin(-200);
-	lift.spin(-600);
-
+	tower_auton(200,600);
 
 	while(drive(-1.1,150,50)) {pros::delay(1);}
 	intake.spin(0);
@@ -304,14 +326,7 @@ if(runauton) {
 	while(drive(1,150,50)) {pros::delay(1);}
 	pros::delay(250);
 
-
-	lift.spin(600);
-	pros::delay(700);
-	intake.spin(200);
-	pros::delay(900);
-	intake.spin(-200);
-	lift.spin(-600);
-
+	tower_auton(200,600);
 
 	while(drive(-0.25,150,50)) {pros::delay(1);}
 	lift.spin(0);
@@ -335,13 +350,7 @@ if(runauton) {
 	while(drive(.8,150,50)) {pros::delay(1);}
 	pros::delay(250);
 
-	lift.spin(600);
-	pros::delay(1000);
-	intake.spin(200);
-	pros::delay(500);
-	intake.spin(-200);
-	lift.spin(-600);
-
+	tower_auton(200,600);
 
 	while(drive(-1.41,150,50)) {pros::delay(1);}
 	pros::delay(250);
@@ -574,7 +583,11 @@ void opcontrol() {
 		if(master.get_digital(DIGITAL_Y)) {
 		lt.resetEncoders();
 		rt.resetEncoders();
-	}
+		}
+
+		if(master.get_digital(DIGITAL_X)) {
+			tower_auton(200,600);
+		}
 	}
 
 }
