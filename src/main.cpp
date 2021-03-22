@@ -48,7 +48,35 @@ void on_center_button() {
 }
 
 
+void autonmode(int b) {
 
+	if(b==2) {
+		pros::lcd::set_text(3,"AUTON OFF");
+		runauton=false;
+	} else {
+		pros::lcd::set_text(3,"AUTON ON");
+		runauton=true;
+	}
+}
+void on_button_1() {
+	static bool pressed = false;
+	pressed = !pressed;
+	if (pressed) {
+		autonmode(1);
+	} else {
+		autonmode(1);
+	}
+}
+
+void on_button_2() {
+	static bool pressed = false;
+	pressed = !pressed;
+	if (pressed) {
+		autonmode(2);
+	} else {
+		autonmode(2);
+	}
+}
 /**
  * Runs initialization code. This occurs as soon as the program is started.
  *
@@ -63,6 +91,8 @@ void initialize() {
 	vs.set_signature(1, &BLUE_SIG);
 	vs.set_signature(2, &RED_SIG);
 	pros::lcd::register_btn1_cb(on_center_button);
+	pros::lcd::register_btn0_cb(on_button_1);
+	pros::lcd::register_btn2_cb(on_button_2);
 }
 
 /**
@@ -162,67 +192,58 @@ void stopbase() {
 	rt.stop();
 }
 
-void turn(int tt, int turndeg, int speed, int err) {
-
+bool turn(int tt, int turndeg, int speed, int err) {
+	int ct = tt-getgyro();
 	int ms = int(float(speed)*0.2);
-	bool contin = true;
-	while(contin) {
+	if(ct<0) {ct+=360;}
 
-		int ct = tt-getgyro();
-		if(ct<0) {ct+=360;}
-
-		if(ct<=180) {
-			lt.rpm(int(float(ct)/float(turndeg)*(speed)+ms));
-			rt.rpm(-int(float(ct)/float(turndeg)*(speed)+ms));
-		} else {
-			lt.rpm(-int(float(ct)/float(turndeg)*(speed)+ms));
-			rt.rpm(int(float(ct)/float(turndeg)*(speed)+ms));
-		}
+	if(ct<=180) {
+		lt.rpm(int(float(ct)/float(turndeg)*(speed)+ms));
+		rt.rpm(-int(float(ct)/float(turndeg)*(speed)+ms));
+	} else {
+		lt.rpm(-int(float(ct)/float(turndeg)*(speed)+ms));
+		rt.rpm(int(float(ct)/float(turndeg)*(speed)+ms));
+	}
 
 	//pros::lcd::set_text(1,"LEFT ENCODER: " + std::to_string(lt.getPos()));
 
-		if(abs(ct)<err) {
-			rt.resetEncoders();
-			lt.resetEncoders();
-			stopbase();
-			contin = false;
-		}
-		pros::delay(1);
-	}
+	if(abs(ct)<err) {
+		rt.resetEncoders();
+		lt.resetEncoders();
+		stopbase();
+		return false;
 
-	pros::delay(150);
+	} else {
+		return true;
+	}
 
 }
 
 
-void drive(float tiles, int speed, int err) {
+bool drive(float tiles, int speed, int err) {
 	int tt = tiles*onetile;
-	bool contin = true;
+	int ct = abs(tt-lt.getPos());
+	int ms = int(float(speed)*0.2);
 
-	while(contin) {
-		int ms = int(float(speed)*0.2);
-		int ct = abs(tt-lt.getPos());
 
-		if(tt>0) {
-			lt.rpm(int(float(ct)/float(tt)*(speed)+ms));
-			rt.rpm(int(float(ct)/float(tt)*(speed)+ms));
-		} else {
-			lt.rpm(int(float(ct)/float(tt)*(speed)-ms));
-			rt.rpm(int(float(ct)/float(tt)*(speed)-ms));
-		}
+	//pros::lcd::set_text(1,"LEFT ENCODER: " + std::to_string(lt.getPos()));
 
-		if(abs(ct)<=err) {
-			rt.resetEncoders();
-			lt.resetEncoders();
-			stopbase();
-			contin=false;
-		}
-		pros::delay(1);
+
+	if(tt>0) {
+	lt.rpm(int(float(ct)/float(tt)*(speed)+ms));
+	rt.rpm(int(float(ct)/float(tt)*(speed)+ms));
+} else {
+	lt.rpm(int(float(ct)/float(tt)*(speed)-ms));
+	rt.rpm(int(float(ct)/float(tt)*(speed)-ms));
+}
+	if(abs(ct)<=err) {
+		rt.resetEncoders();
+		lt.resetEncoders();
+		stopbase();
+		return false;
+	} else {
+		return true;
 	}
-
-
-	pros::delay(150);
-
 }
 
 int get_ball_color() {
@@ -233,18 +254,7 @@ int get_ball_color() {
 	return 255;
 }
 
-void score_red_ball(int speed) {
-	lift.spin(speed);
-	pros::delay(1150);
-	lift.spin(0);
-}
 
-void intake_ball() {
-	lift.spin(600);
-	pros::delay(250);
-	intake.spin(0);
-	lift.spin(0);
-}
 void tower_auton(int ispeed, int lspeed) {
 	//until intake blue ball
 	intake.spin(ispeed);
@@ -266,102 +276,125 @@ void tower_auton(int ispeed, int lspeed) {
 	lift.spin(0);
 }
 
-
-
 void autonomous() {
-
+if(runauton) {
 	pros::delay(3000);
 
 	lift.unload(600);
-	pros::delay(750);
+	pros::delay(1000);
+	intake.spin(200);
+	pros::delay(500);
+	lift.spin(0);
+	intake.spin(0);
+	while(drive(1.5,150,50)) {pros::delay(1);}
+	pros::delay(250);
+
+
+
+	while(turn(135,135,150,4)) {pros::delay(1);}
+	pros::delay(250);
+
+	while(drive(1.26,150,50)) {pros::delay(1);}
+	pros::delay(250);
+
+
+	/*
+
+	THEORETICAL SCORING OPERATIONS
+
+	*/
+
+	tower_auton(200,600);
+
+	while(drive(-1.1,150,50)) {pros::delay(1);}
+	intake.spin(0);
+	lift.spin(0);
+	pros::delay(250);
+
+	while(turn(270, 135, 50, 4)) {pros::delay(1);}
+	pros::delay(250);
+
+	intake.spin(200);
+	while(drive(1.2,100,50)) {pros::delay(1);}
+	pros::delay(250);
+
+	intake.spin(0);
+
+	while(turn(195, 75, 100, 4)) {pros::delay(1);}
+	pros::delay(250);
+
+	while(drive(1,150,50)) {pros::delay(1);}
+	pros::delay(250);
+
+	tower_auton(200,600);
+
+	while(drive(-0.25,150,50)) {pros::delay(1);}
+	lift.spin(0);
+	pros::delay(250);
+
+	while(turn(270,90,50,4)) {pros::delay(1);}
+	pros::delay(250);
+
+	intake.spin(200);
+	while(drive(2.2,150,50)) {pros::delay(1);}
+	lift.spin(600);
+	pros::delay(250);
 	lift.spin(0);
 
-	drive(1.5,150,50);
+	while(drive(-0.5,150,50)) {pros::delay(1);}
+	pros::delay(250);
 
-	turn(135,135,150,4);
+	while(turn(235,35,50,4)) {pros::delay(1);}
+	pros::delay(250);
 
-	drive(1.26,150,50);
+	while(drive(.8,150,50)) {pros::delay(1);}
+	pros::delay(250);
+
+	tower_auton(200,600);
+
+	while(drive(-1.41,150,50)) {pros::delay(1);}
+	pros::delay(250);
 
 
-	score_red_ball(600);
 
-	drive(-1.1,150,50);
 
-	turn(270, 135, 50, 4);
 
-	intake.spin(200);
-	drive(1.2,100,50);
-	intake_ball();
+/*
+lift.spin(-600);
+intake.spin(200);
+pros::delay(1500);
+lift.spin(0);
+pros::delay(500);
+rt.rpm(100);
+lt.rpm(100);
+pros::delay(500);
+rt.rpm(0);
+lt.rpm(0);
+intake.spin(200);
+lift.spin(600);
+pros::delay(1500);
+lift.spin(0);
+intake.spin(-200);
+lt.rpm(-200);
+rt.rpm(-200);
+pros::delay(500);
+lt.rpm(0);
+rt.rpm(0);
+intake.spin(0);
+*/
+} else {
 
-	turn(180, 90, 100, 4);
+	lt.rpm(50);
+	rt.rpm(-50);
+	while(getgyro() < 70) {
+		pros::delay(3);
+	}
+	lt.rpm(0);
+	rt.rpm(0);
+	pros::delay(20000);
 
-	drive(1,150,50);
+}
 
-	score_red_ball(600);
-
-	drive(-0.25,150,50);
-
-	turn(270,90,50,4);
-
-	intake.spin(200);
-	drive(2.2,150,50);
-	intake_ball();
-
-	drive(-0.5,150,50);
-
-	turn(235,35,50,4);
-
-	drive(.8,150,50);
-
-	score_red_ball(600);
-
-	drive(-0.8,150,50);
-
-	turn(0,135,50,4);
-
-	intake.spin(200);
-	drive(2,150,50);
-	intake_ball();
-
-	turn(270,90,50,4);
-
-	drive(0.3,150,50);
-
-	score_red_ball(600);
-
-	drive(-1,150,50);
-
-	turn(0,90,50,4);
-
-	intake.spin(200);
-	drive(2.25,150,50);
-	intake_ball();
-
-	drive(-2,150,50);
-
-	turn(330,30,50,4);
-
-	drive(1.4,150,50);
-
-	score_red_ball(600);
-
-	drive(-1.4,150,50);
-
-	turn(90,120,50,4);
-
-	intake.spin(200);
-	drive(1.5,150,50);
-	intake_ball();
-
-	turn(180,90,50,4);
-
-	drive(0.7,200,50);
-
-	drive(-0.3,150,50);
-
-	score_red_ball(600);
-
-	drive(-0.6,150,50);
 }
 
 /**
