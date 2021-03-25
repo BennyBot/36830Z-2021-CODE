@@ -27,7 +27,7 @@ Lift lift = Lift(1000, lift1, lift2);
 Intake intake = Intake(il,ir);
 bool sp = false;
 
-int team_color = 255;
+int team_color = 2;
 
 pros::vision_signature_s_t BLUE_SIG = pros::Vision::signature_from_utility(1, -3319, -2383, -2851, 10045, 14479, 12262, 2.600, 0);
 pros::vision_signature_s_t RED_SIG = pros::Vision::signature_from_utility(2, 7835, 10789, 9312, -925, -111, -518, 3.000, 0);
@@ -149,8 +149,8 @@ void constgyro() {
 	}
 }
 
-/*bool keepturn(int deg, int err) {
-	if(getgyro() > deg+err || getgyro()<deg-err) {
+/*bool keepturn(int deg, int error) {
+	if(getgyro() > deg+error || getgyro()<deg-error) {
 		return true;
 	}
 	return false;
@@ -162,26 +162,30 @@ void stopbase() {
 	rt.stop();
 }
 
-void turn(int tt, int turndeg, int speed, int err) {
+void turn(int turnTo, int turndeg, int speed) {
 
-	int ms = int(float(speed)*0.2);
+	int error = 2;
+	int minimumSpeed = 10;
 	bool contin = true;
+
 	while(contin) {
 
-		int ct = tt-getgyro();
-		if(ct<0) {ct+=360;}
-
-		if(ct<=180) {
-			lt.rpm(int(float(ct)/float(turndeg)*(speed)+ms));
-			rt.rpm(-int(float(ct)/float(turndeg)*(speed)+ms));
-		} else {
-			lt.rpm(-int(float(ct)/float(turndeg)*(speed)+ms));
-			rt.rpm(int(float(ct)/float(turndeg)*(speed)+ms));
+		int currentTurn = turnTo-getgyro();
+		if(currentTurn<0) {currentTurn+=360;}
+		int currentSpeed = float(currentTurn)/float(turndeg)*(speed);
+		if(currentSpeed < minimumSpeed){
+			currentSpeed = minimumSpeed;
 		}
 
-	//pros::lcd::set_text(1,"LEFT ENCODER: " + std::to_string(lt.getPos()));
+		if(currentTurn<=180) {
+			lt.rpm(currentSpeed);
+			rt.rpm(-1*currentSpeed);
+		} else {
+			lt.rpm(-1*currentSpeed);
+			rt.rpm(currentSpeed);
+		}
 
-		if(abs(ct)<err) {
+		if(abs(currentTurn)<error) {
 			rt.resetEncoders();
 			lt.resetEncoders();
 			stopbase();
@@ -195,23 +199,23 @@ void turn(int tt, int turndeg, int speed, int err) {
 }
 
 
-void drive(float tiles, int speed, int err) {
-	int tt = tiles*onetile;
+void drive(float tiles, int speed, int error) {
+	int turnTo = tiles*onetile;
 	bool contin = true;
 
 	while(contin) {
-		int ms = int(float(speed)*0.2);
-		int ct = abs(tt-lt.getPos());
+		int minimumSpeed = int(float(speed)*0.2);
+		int currentTurn = abs(turnTo-lt.getPos());
 
-		if(tt>0) {
-			lt.rpm(int(float(ct)/float(tt)*(speed)+ms));
-			rt.rpm(int(float(ct)/float(tt)*(speed)+ms));
+		if(turnTo>0) {
+			lt.rpm(int(float(currentTurn)/float(turnTo)*(speed)+minimumSpeed));
+			rt.rpm(int(float(currentTurn)/float(turnTo)*(speed)+minimumSpeed));
 		} else {
-			lt.rpm(int(float(ct)/float(tt)*(speed)-ms));
-			rt.rpm(int(float(ct)/float(tt)*(speed)-ms));
+			lt.rpm(int(float(currentTurn)/float(turnTo)*(speed)-minimumSpeed));
+			rt.rpm(int(float(currentTurn)/float(turnTo)*(speed)-minimumSpeed));
 		}
 
-		if(abs(ct)<=err) {
+		if(abs(currentTurn)<=error) {
 			rt.resetEncoders();
 			lt.resetEncoders();
 			stopbase();
@@ -235,7 +239,7 @@ int get_ball_color() {
 
 void score_red_ball(int speed) {
 	lift.spin(speed);
-	pros::delay(1150);
+	pros::delay(1550);
 	lift.spin(0);
 }
 
@@ -270,30 +274,50 @@ void tower_auton(int ispeed, int lspeed) {
 
 void autonomous() {
 
-	pros::delay(3000);
+	if(lt.isdrift()) {
+		lt.drift();
+	}
+	if(rt.isdrift()) {
+		rt.drift();
+	}
+
+	while(gyro.is_calibrating()) {
+	pros::delay(2);
+}
 
 	lift.unload(600);
-	pros::delay(750);
+	pros::delay(500);
+	lift.spin(0);
+	pros::delay(100);
+	lift.unload(600);
+	pros::delay(250);
+	lift.spin(0);
+	pros::delay(100);
+	lift.unload(600);
+	pros::delay(250);
+
 	lift.spin(0);
 
+	intake.spin(200);
 	drive(1.5,150,50);
+	intake_ball();
 
-	turn(135,135,150,4);
+	turn(135,135,50);
 
 	drive(1.26,150,50);
 
 
 	score_red_ball(600);
 
-	drive(-1.1,150,50);
+	drive(-1.3,150,50);
 
-	turn(270, 135, 50, 4);
+	turn(260, 135, 25);
 
 	intake.spin(200);
-	drive(1.2,100,50);
+	drive(1.6,150,50);
 	intake_ball();
 
-	turn(180, 90, 100, 4);
+	turn(180, 90, 25);
 
 	drive(1,150,50);
 
@@ -301,61 +325,61 @@ void autonomous() {
 
 	drive(-0.25,150,50);
 
-	turn(270,90,50,4);
+	turn(270,90,50);
 
 	intake.spin(200);
-	drive(2.2,150,50);
+	drive(2.05,150,50);
 	intake_ball();
 
 	drive(-0.5,150,50);
 
-	turn(235,35,50,4);
+	turn(235,35,50);
 
-	drive(.8,150,50);
+	drive(.75,150,50);
 
 	score_red_ball(600);
 
-	drive(-0.8,150,50);
+	drive(-0.5,150,50);
 
-	turn(0,135,50,4);
+	turn(0,135,50);
 
 	intake.spin(200);
-	drive(2,150,50);
+	drive(1.65,150,50);
 	intake_ball();
 
-	turn(270,90,50,4);
+	turn(270,90,50);
 
 	drive(0.3,150,50);
 
 	score_red_ball(600);
 
-	drive(-1,150,50);
+	drive(-0.6,150,50);
 
-	turn(0,90,50,4);
+	turn(0,90,50);
 
 	intake.spin(200);
-	drive(2.25,150,50);
+	drive(1.75,150,50);
 	intake_ball();
 
-	drive(-2,150,50);
+	drive(-1.2,150,50);
 
-	turn(330,30,50,4);
+	turn(330,30,50);
 
-	drive(1.4,150,50);
+	drive(1.3,150,50);
 
 	score_red_ball(600);
 
-	drive(-1.4,150,50);
+	drive(-1,150,50);
 
-	turn(90,120,50,4);
+	turn(90,120,50);
 
 	intake.spin(200);
 	drive(1.5,150,50);
 	intake_ball();
 
-	turn(180,90,50,4);
+	turn(180,90,50);
 
-	drive(0.7,200,50);
+	drive(0.7,150,50);
 
 	drive(-0.3,150,50);
 
