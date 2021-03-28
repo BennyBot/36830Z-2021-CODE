@@ -19,10 +19,11 @@ pros::Vision vs(10);
 
 
 int onetile = 1719;
+int commandPause = 250; //In ms
 
 bool runauton=true;
-Train rt = Train(onetile,r1,r2);
-Train lt = Train(onetile,l1,l2);
+Train rightTrain = Train(onetile,r1,r2);
+Train leftTrain = Train(onetile,l1,l2);
 Lift lift = Lift(1000, lift1, lift2);
 Intake intake = Intake(il,ir);
 bool sp = false;
@@ -104,22 +105,22 @@ int getgyro() {
  */
 
 void movebaserpm(int lrpm, int rrpm) {
-	lt.rpm(lrpm);
-	rt.rpm(rrpm);
+	leftTrain.rpm(lrpm);
+	rightTrain.rpm(rrpm);
 }
 
 void movebasetile(double tile, int speed) {
 
-	lt.moveTile(tile, speed);
-	rt.moveTile(-tile, speed);
+	leftTrain.moveTile(tile, speed);
+	rightTrain.moveTile(-tile, speed);
 
-	while(!(rt.stopped() && lt.stopped())) {
+	while(!(rightTrain.stopped() && leftTrain.stopped())) {
 		pros::delay(3);
 	}
-	lt.rpm(0);
-	rt.rpm(0);
-	rt.resetEncoders();
-	lt.resetEncoders();
+	leftTrain.rpm(0);
+	rightTrain.rpm(0);
+	rightTrain.resetEncoders();
+	leftTrain.resetEncoders();
 }
 
 
@@ -139,8 +140,8 @@ void rotatebase(int speed, int deg) {
 }
 
 void rotatebaserpm(int *speeds) {
-	lt.rpm(speeds[0]);
-	rt.rpm(speeds[1]);
+	leftTrain.rpm(speeds[0]);
+	rightTrain.rpm(speeds[1]);
 }
 
 void constgyro() {
@@ -158,75 +159,72 @@ void constgyro() {
 */
 
 void stopbase() {
-	lt.stop();
-	rt.stop();
+	leftTrain.stop();
+	rightTrain.stop();
 }
 
-void turn(int turnTo, int turndeg, int speed) {
+void pTurn(int turnTo, int speed) {
 
-	int error = 2;
-	int minimumSpeed = 10;
-	bool contin = true;
+	int minimumSpeed = 20;
+	int turnDeg = abs(turnTo-getgyro);
+	int currentTurn = turnTo-getgyro();
+	int currentSpeed = float(currentTurn)/float(turnDeg)*speed;
 
-	while(contin) {
-
-		int currentTurn = turnTo-getgyro();
+	do {
+		currentTurn = turnTo-getgyro();
 		if(currentTurn<0) {currentTurn+=360;}
-		int currentSpeed = float(currentTurn)/float(turndeg)*(speed);
+		currentSpeed = float(currentTurn)/float(turnDeg)*speed;
+
 		if(currentSpeed < minimumSpeed){
 			currentSpeed = minimumSpeed;
 		}
 
 		if(currentTurn<=180) {
-			lt.rpm(currentSpeed);
-			rt.rpm(-1*currentSpeed);
+			leftTrain.rpm(currentSpeed);
+			rightTrain.rpm(-1*currentSpeed);
 		} else {
-			lt.rpm(-1*currentSpeed);
-			rt.rpm(currentSpeed);
+			leftTrain.rpm(-1*currentSpeed);
+			rightTrain.rpm(currentSpeed);
 		}
 
-		if(abs(currentTurn)<error) {
-			rt.resetEncoders();
-			lt.resetEncoders();
-			stopbase();
-			contin = false;
-		}
-		pros::delay(1);
-	}
+		pros::delay(5);
+	} while(currentTurn!=0)
 
-	pros::delay(150);
-
+	stopbase();
+	rightTrain.resetEncoders();
+	leftTrain.resetEncoders();
+	pros::delay(commandPause);
 }
 
+void pDrive(float tiles, int speed){
+	int turnTo = tiles*onetile; //This is the amount of tiles that are desired, converted into encoder ticks
+	int minimumSpeed = 25
+	int leftSpeed = speed;
+	int currentTurn = abs(turnTo-leftTrain.getPos());
+	int error = 0;
+	int Kp = 0.5; //This is the tuning constant for the P loop
 
-void drive(float tiles, int speed, int error) {
-	int turnTo = tiles*onetile;
-	bool contin = true;
+	while(abs(currentTurn)!=0) {
+		currentTurn = abs(turnTo-leftTrain.getPos());
+		error = leftTrain.getPos()-rightTrain.getPos();
 
-	while(contin) {
-		int minimumSpeed = int(float(speed)*0.2);
-		int currentTurn = abs(turnTo-lt.getPos());
-
-		if(turnTo>0) {
-			lt.rpm(int(float(currentTurn)/float(turnTo)*(speed)+minimumSpeed));
-			rt.rpm(int(float(currentTurn)/float(turnTo)*(speed)+minimumSpeed));
-		} else {
-			lt.rpm(int(float(currentTurn)/float(turnTo)*(speed)-minimumSpeed));
-			rt.rpm(int(float(currentTurn)/float(turnTo)*(speed)-minimumSpeed));
+		leftSpeed = int(float(currentTurn)/float(turnTo)*(speed));
+		if (leftSpeed<minimumSpeed){
+			leftSpeed = minimumSpeed;
 		}
 
-		if(abs(currentTurn)<=error) {
-			rt.resetEncoders();
-			lt.resetEncoders();
-			stopbase();
-			contin=false;
-		}
-		pros::delay(1);
+		rightSpeed = leftSpeed + (error*Kp);
+
+		leftTrain.rpm(leftSpeed);
+		rightTrain.rpm(rightSpeed);
+
+		pros::delay(5);
 	}
+	stopbase();
+	rightTrain.resetEncoders();
+	leftTrain.resetEncoders();
 
-
-	pros::delay(150);
-
+	pros::delay(commandPause);
 }
 
 int get_ball_color() {
@@ -274,11 +272,11 @@ void tower_auton(int ispeed, int lspeed) {
 
 void autonomous() {
 
-	if(lt.isdrift()) {
-		lt.drift();
+	if(leftTrain.isdrift()) {
+		leftTrain.drift();
 	}
-	if(rt.isdrift()) {
-		rt.drift();
+	if(rightTrain.isdrift()) {
+		rightTrain.drift();
 	}
 
 	while(gyro.is_calibrating()) {
@@ -443,8 +441,8 @@ void opcontrol() {
 			ballcol=255;
 		}
 
-		pros::lcd::set_text(1, "LEFT TRAIN" + std::to_string(lt.getPos()));
-		pros::lcd::set_text(2, "RIGHT TRAIN" + std::to_string(rt.getPos()));
+		pros::lcd::set_text(1, "LEFT TRAIN" + std::to_string(leftTrain.getPos()));
+		pros::lcd::set_text(2, "RIGHT TRAIN" + std::to_string(rightTrain.getPos()));
 
 		pros::lcd::set_text(4, "TEAM COLOR: " + std::to_string(team_color));
 		pros::lcd::set_text(5, "COLOR: " + std::to_string(ballcol));
@@ -482,8 +480,8 @@ void opcontrol() {
 			leftx = -(leftx*leftx)/50;
 		}
 */
-		lt.rpm(lefty+leftx);
-		rt.rpm(lefty-leftx);
+		leftTrain.rpm(lefty+leftx);
+		rightTrain.rpm(lefty-leftx);
 
 		if(master.get_digital(DIGITAL_R1)) {
 			holdr1 = true;
@@ -525,11 +523,11 @@ void opcontrol() {
 			holding = true;
 		} else if(!master.get_digital(DIGITAL_A) && holding) {
 			holding = false;
-			lt.drift();
-			rt.drift();
+			leftTrain.drift();
+			rightTrain.drift();
 		}
 
-		if(lt.isdrift()) {
+		if(leftTrain.isdrift()) {
 			pros::lcd::set_text(6,"Drifty");
 			hold = "DRIFTY";
 		} else {
@@ -572,8 +570,8 @@ void opcontrol() {
 
 
 		if(master.get_digital(DIGITAL_Y)) {
-		lt.resetEncoders();
-		rt.resetEncoders();
+		leftTrain.resetEncoders();
+		rightTrain.resetEncoders();
 		}
 
 		if(master.get_digital(DIGITAL_X)) {
