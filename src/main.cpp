@@ -166,29 +166,24 @@ void stopbase() {
 
 void pTurn(int turnTo, int speed) {
 	int gyrovalue = getgyro();
-	int diff = turnTo-gyrovalue;
-	int turnDeg = (diff < 0 ? diff+360 : diff);
+	float diff = (turnTo-current + 180) % 360 - 180;
+	int currentTurn = (diff < -180 ? diff + 360 : diff);
 	int minimumSpeed = 20;
-	int currentTurn = turnDeg;
+	int turnDeg = abs(currentTurn);
 	int currentSpeed = float(currentTurn)/float(turnDeg)*speed;
 
 	do {
 		gyrovalue = getgyro();
-		diff = turnTo-gyrovalue;
-		currentTurn = (diff < 0 ? diff+360 : diff);
+		diff = (turnTo-current + 180) % 360 - 180;
+		currentTurn = (diff < 180 ? diff+360 : diff);
 		currentSpeed = float(currentTurn)/float(turnDeg)*speed;
 
 		if(currentSpeed < minimumSpeed){
-			currentSpeed = minimumSpeed;
+			currentSpeed = (currentSpeed < 0 ? -minimumSpeed : minimumSpeed);
 		}
 
-		if(currentTurn<=180) {
 			leftTrain.rpm(currentSpeed);
 			rightTrain.rpm(-1*currentSpeed);
-		} else {
-			leftTrain.rpm(-1*currentSpeed);
-			rightTrain.rpm(currentSpeed);
-		}
 
 		pros::delay(5);
 	} while(currentTurn!=0);
