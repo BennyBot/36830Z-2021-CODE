@@ -30,6 +30,7 @@ bool sp = false;
 
 int team_color = 2;
 
+
 pros::vision_signature_s_t BLUE_SIG = pros::Vision::signature_from_utility(1, -3319, -2383, -2851, 10045, 14479, 12262, 2.600, 0);
 pros::vision_signature_s_t RED_SIG = pros::Vision::signature_from_utility(2, 7835, 10789, 9312, -925, -111, -518, 3.000, 0);
 /**
@@ -164,15 +165,17 @@ void stopbase() {
 }
 
 void pTurn(int turnTo, int speed) {
-
+	int gyrovalue = getgyro();
+	int diff = turnTo-gyrovalue;
+	int turnDeg = (diff < 0 ? diff+360 : diff);
 	int minimumSpeed = 20;
-	int turnDeg = abs(turnTo-getgyro);
-	int currentTurn = turnTo-getgyro();
+	int currentTurn = turnDeg;
 	int currentSpeed = float(currentTurn)/float(turnDeg)*speed;
 
 	do {
-		currentTurn = turnTo-getgyro();
-		if(currentTurn<0) {currentTurn+=360;}
+		gyrovalue = getgyro();
+		diff = turnTo-gyrovalue;
+		currentTurn = (diff < 0 ? diff+360 : diff);
 		currentSpeed = float(currentTurn)/float(turnDeg)*speed;
 
 		if(currentSpeed < minimumSpeed){
@@ -188,7 +191,7 @@ void pTurn(int turnTo, int speed) {
 		}
 
 		pros::delay(5);
-	} while(currentTurn!=0)
+	} while(currentTurn!=0);
 
 	stopbase();
 	rightTrain.resetEncoders();
