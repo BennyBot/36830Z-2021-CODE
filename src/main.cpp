@@ -165,28 +165,35 @@ void stopbase() {
 }
 
 void pTurn(int turnTo, int speed) {
+
 	int gyrovalue = getgyro();
-	float diff = (turnTo-current + 180) % 360 - 180;
+	float diff = (turnTo-gyrovalue + 180) % 360 - 180;
 	int currentTurn = (diff < -180 ? diff + 360 : diff);
-	int minimumSpeed = 20;
+	int minimumSpeed = 15;
 	int turnDeg = abs(currentTurn);
+	speed = int(float(turnDeg)/180*150);
+	if(speed < 50) {speed=50;}
 	int currentSpeed = float(currentTurn)/float(turnDeg)*speed;
 
-	do {
-		gyrovalue = getgyro();
-		diff = (turnTo-current + 180) % 360 - 180;
-		currentTurn = (diff < 180 ? diff+360 : diff);
-		currentSpeed = float(currentTurn)/float(turnDeg)*speed;
+			do {
+				do {
+					gyrovalue = getgyro();
+					pros::lcd::set_text(1, "GYRO VALUE : " + std::to_string(gyrovalue));
+					diff = (turnTo-gyrovalue + 180) % 360 - 180;
+					currentTurn = (diff < -180 ? diff+360 : diff);
+					currentSpeed = int(float(currentTurn)/float(turnDeg)*float(speed));
 
-		if(currentSpeed < minimumSpeed){
-			currentSpeed = (currentSpeed < 0 ? -minimumSpeed : minimumSpeed);
-		}
+					if(abs(currentSpeed) < minimumSpeed){
+						currentSpeed = (currentSpeed < 0 ? -minimumSpeed : minimumSpeed);
+					}
 
-			leftTrain.rpm(currentSpeed);
-			rightTrain.rpm(-1*currentSpeed);
+						leftTrain.rpm(currentSpeed);
+						rightTrain.rpm(-1*currentSpeed);
 
-		pros::delay(5);
-	} while(currentTurn!=0);
+					pros::delay(5);
+				} while(currentTurn!=0);
+				pros::delay(100);
+			}	while(getgyro()>turnTo+3 || getgyro() < turnTo -3);
 
 	stopbase();
 	rightTrain.resetEncoders();
@@ -196,22 +203,22 @@ void pTurn(int turnTo, int speed) {
 
 void pDrive(float tiles, int speed){
 	int turnTo = tiles*onetile; //This is the amount of tiles that are desired, converted into encoder ticks
-	int minimumSpeed = 25
+	int minimumSpeed = 40;
 	int leftSpeed = speed;
-	int currentTurn = abs(turnTo-leftTrain.getPos());
+	int currentTurn = turnTo-leftTrain.getPos();
 	int error = 0;
-	int Kp = 0.5; //This is the tuning constant for the P loop
+	float Kp = 0.5; //This is the tuning constant for the P loop
 
-	while(abs(currentTurn)!=0) {
-		currentTurn = abs(turnTo-leftTrain.getPos());
+	while(abs(currentTurn)>=5) {
+		currentTurn = turnTo-leftTrain.getPos();
 		error = leftTrain.getPos()-rightTrain.getPos();
 
-		leftSpeed = int(float(currentTurn)/float(turnTo)*(speed));
-		if (leftSpeed<minimumSpeed){
-			leftSpeed = minimumSpeed;
+		leftSpeed = int(float(currentTurn)/float(abs(turnTo))*(speed));
+		if (abs(leftSpeed)<minimumSpeed){
+			leftSpeed = (leftSpeed < 0 ? -minimumSpeed : minimumSpeed);
 		}
 
-		rightSpeed = leftSpeed + (error*Kp);
+		int rightSpeed = leftSpeed + int(float(error)*Kp);
 
 		leftTrain.rpm(leftSpeed);
 		rightTrain.rpm(rightSpeed);
@@ -270,6 +277,9 @@ void tower_auton(int ispeed, int lspeed) {
 
 void autonomous() {
 
+	int turnSpeed = 200;
+	int driveSpeed = 200;
+
 	if(leftTrain.isdrift()) {
 		leftTrain.drift();
 	}
@@ -278,9 +288,13 @@ void autonomous() {
 	}
 
 	while(gyro.is_calibrating()) {
-	pros::delay(2);
-}
+		pros::delay(200);
+		pros::lcd::set_text(3, "CALIBRATING GYRO");
+	}
+	pros::lcd::set_text(3, "CALIBRATION DONE");
+pros::delay(1000);
 
+	//Initialization
 	lift.unload(600);
 	pros::delay(500);
 	lift.spin(0);
@@ -291,97 +305,98 @@ void autonomous() {
 	pros::delay(100);
 	lift.unload(600);
 	pros::delay(250);
-
 	lift.spin(0);
 
+	//Get first ball
 	intake.spin(200);
-	drive(1.5,150,50);
+	pDrive(1.7,driveSpeed);
 	intake_ball();
 
-	turn(135,135,50);
+	//Turn and go to goal
+	pTurn(135,turnSpeed);
+	pDrive(1.25,driveSpeed);
+	score_red_ball(600);
 
-	drive(1.26,150,50);
+	//Backup from goal
+	pDrive(-1.1,driveSpeed);
 
+	pTurn(260,turnSpeed);
+
+	intake.spin(200);
+	pDrive(1.5,driveSpeed);
+	intake_ball();
+
+	pTurn(180, turnSpeed);
+
+	pDrive(0.9,driveSpeed);
 
 	score_red_ball(600);
 
-	drive(-1.3,150,50);
+	pDrive(-0.1,driveSpeed);
 
-	turn(260, 135, 25);
+	pTurn(260,turnSpeed);
 
 	intake.spin(200);
-	drive(1.6,150,50);
+	pDrive(2.05,driveSpeed);
 	intake_ball();
 
-	turn(180, 90, 25);
+	pDrive(-1,driveSpeed);
 
-	drive(1,150,50);
+	pTurn(235,turnSpeed);
+
+	pDrive(1.1,driveSpeed);
 
 	score_red_ball(600);
 
-	drive(-0.25,150,50);
+	pDrive(-0.2,driveSpeed);
 
-	turn(270,90,50);
+	pTurn(350,turnSpeed);
 
 	intake.spin(200);
-	drive(2.05,150,50);
+	pDrive(2.1,driveSpeed);
 	intake_ball();
 
-	drive(-0.5,150,50);
+	pTurn(270,turnSpeed);
 
-	turn(235,35,50);
-
-	drive(.75,150,50);
+	pDrive(0.2,driveSpeed);
 
 	score_red_ball(600);
 
-	drive(-0.5,150,50);
+	pDrive(-0.4,driveSpeed);
 
-	turn(0,135,50);
+	pTurn(0,turnSpeed);
 
 	intake.spin(200);
-	drive(1.65,150,50);
+	pDrive(1.75,driveSpeed);
 	intake_ball();
 
-	turn(270,90,50);
+	pDrive(-1.2,driveSpeed);
 
-	drive(0.3,150,50);
+	pTurn(330,turnSpeed);
+
+	pDrive(1.3,driveSpeed);
 
 	score_red_ball(600);
 
-	drive(-0.6,150,50);
+	pDrive(-1,driveSpeed);
 
-	turn(0,90,50);
+	pTurn(90,turnSpeed);
 
 	intake.spin(200);
-	drive(1.75,150,50);
+	pDrive(1.5,driveSpeed);
 	intake_ball();
 
-	drive(-1.2,150,50);
+	pTurn(180,turnSpeed);
 
-	turn(330,30,50);
+	pDrive(0.7,driveSpeed);
 
-	drive(1.3,150,50);
+	pDrive(-0.3,driveSpeed);
 
 	score_red_ball(600);
 
-	drive(-1,150,50);
+	pDrive(-0.6,driveSpeed);
 
-	turn(90,120,50);
 
-	intake.spin(200);
-	drive(1.5,150,50);
-	intake_ball();
-
-	turn(180,90,50);
-
-	drive(0.7,150,50);
-
-	drive(-0.3,150,50);
-
-	score_red_ball(600);
-
-	drive(-0.6,150,50);
 }
 
 /**
