@@ -169,18 +169,19 @@ void pTurn(int turnTo, int speed) {
 	int gyrovalue = getgyro();
 	float diff = (turnTo-gyrovalue + 180) % 360 - 180;
 	int currentTurn = (diff < -180 ? diff + 360 : diff);
-	int minimumSpeed = 15;
+	int minimumSpeed = 10;
 	int turnDeg = abs(currentTurn);
-	speed = int(float(turnDeg)/180*150);
+	speed = 150;
 	if(speed < 50) {speed=50;}
 	int currentSpeed = float(currentTurn)/float(turnDeg)*speed;
 
 			do {
 				do {
 					gyrovalue = getgyro();
-					pros::lcd::set_text(1, "GYRO VALUE : " + std::to_string(gyrovalue));
+					pros::lcd::set_text(3, "GYRO VALUE : " + std::to_string(gyrovalue));
 					diff = (turnTo-gyrovalue + 180) % 360 - 180;
 					currentTurn = (diff < -180 ? diff+360 : diff);
+					//currentSpeed = int((abs(currentTurn)>25 ? speed : float(currentTurn))/float(turnDeg)*float(speed));
 					currentSpeed = int(float(currentTurn)/float(turnDeg)*float(speed));
 
 					if(abs(currentSpeed) < minimumSpeed){
@@ -191,10 +192,12 @@ void pTurn(int turnTo, int speed) {
 						rightTrain.rpm(-1*currentSpeed);
 
 					pros::delay(5);
-				} while(currentTurn!=0);
+				} while(turnTo!=gyrovalue);
+				stopbase();
 				pros::delay(100);
-			}	while(getgyro()>turnTo+3 || getgyro() < turnTo -3);
-
+			}
+			while(turnTo!=gyrovalue);
+			//while(getgyro()!=turnTo);
 	stopbase();
 	rightTrain.resetEncoders();
 	leftTrain.resetEncoders();
@@ -309,21 +312,21 @@ pros::delay(1000);
 
 	//Get first ball
 	intake.spin(200);
-	pDrive(1.7,driveSpeed);
+	pDrive(1.65,driveSpeed);
 	intake_ball();
 
 	//Turn and go to goal
 	pTurn(135,turnSpeed);
-	pDrive(1.25,driveSpeed);
+	pDrive(1.30,driveSpeed);
 	score_red_ball(600);
 
 	//Backup from goal
-	pDrive(-1.1,driveSpeed);
+	pDrive(-1.2,driveSpeed);
 
-	pTurn(260,turnSpeed);
+	pTurn(263,turnSpeed);
 
 	intake.spin(200);
-	pDrive(1.5,driveSpeed);
+	pDrive(1.47,driveSpeed);
 	intake_ball();
 
 	pTurn(180, turnSpeed);
@@ -334,17 +337,17 @@ pros::delay(1000);
 
 	pDrive(-0.1,driveSpeed);
 
-	pTurn(260,turnSpeed);
+	pTurn(263,turnSpeed);
 
 	intake.spin(200);
-	pDrive(2.05,driveSpeed);
+	pDrive(2.055,driveSpeed);
 	intake_ball();
 
-	pDrive(-1,driveSpeed);
+	pDrive(-0.8,driveSpeed);
 
-	pTurn(235,turnSpeed);
+	pTurn(245,turnSpeed);
 
-	pDrive(1.1,driveSpeed);
+	pDrive(1.05,driveSpeed);
 
 	score_red_ball(600);
 
@@ -356,15 +359,15 @@ pros::delay(1000);
 	pDrive(2.1,driveSpeed);
 	intake_ball();
 
-	pTurn(270,turnSpeed);
+	pTurn(263,turnSpeed);
 
-	pDrive(0.2,driveSpeed);
+	pDrive(0.3,driveSpeed);
 
 	score_red_ball(600);
 
-	pDrive(-0.4,driveSpeed);
+	pDrive(-0.5,driveSpeed);
 
-	pTurn(0,turnSpeed);
+	pTurn(350,turnSpeed);
 
 	intake.spin(200);
 	pDrive(1.75,driveSpeed);
@@ -456,7 +459,7 @@ void opcontrol() {
 
 		pros::lcd::set_text(1, "LEFT TRAIN" + std::to_string(leftTrain.getPos()));
 		pros::lcd::set_text(2, "RIGHT TRAIN" + std::to_string(rightTrain.getPos()));
-
+		pros::lcd::set_text(3,"GYRO: " + std::to_string(getgyro()));
 		pros::lcd::set_text(4, "TEAM COLOR: " + std::to_string(team_color));
 		pros::lcd::set_text(5, "COLOR: " + std::to_string(ballcol));
 
@@ -589,6 +592,9 @@ void opcontrol() {
 
 		if(master.get_digital(DIGITAL_X)) {
 			tower_auton(200,600);
+		}
+		if(master.get_digital(DIGITAL_LEFT)) {
+			pTurn(90,150);
 		}
 	}
 
