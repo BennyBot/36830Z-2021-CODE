@@ -31,6 +31,12 @@ bool sp = false;
 int team_color = 2;
 
 
+int turnSpeed = 200;
+int driveSpeed = 200;
+
+
+
+
 pros::vision_signature_s_t BLUE_SIG = pros::Vision::signature_from_utility(1, -3319, -2383, -2851, 10045, 14479, 12262, 2.600, 0);
 pros::vision_signature_s_t RED_SIG = pros::Vision::signature_from_utility(2, 7835, 10789, 9312, -925, -111, -518, 3.000, 0);
 /**
@@ -164,17 +170,15 @@ void stopbase() {
 	rightTrain.stop();
 }
 
-void pTurn(int turnTo, int speed) {
+void pTurn(int turnTo, int speed=turnSpeed) {
 
 	int gyrovalue = getgyro();
 	float diff = (turnTo-gyrovalue + 180) % 360 - 180;
 	int currentTurn = (diff < -180 ? diff + 360 : diff);
 	int minimumSpeed = 10;
 	int turnDeg = abs(currentTurn);
-	speed = 150;
-	if(speed < 50) {speed=50;}
-	int currentSpeed = float(currentTurn)/float(turnDeg)*speed;
-
+	int currentSpeed = float(currentTurn)/float(turnDeg)*speed*2;
+	currentSpeed = (currentSpeed > speed ? speed : currentTurn);
 			do {
 				do {
 					gyrovalue = getgyro();
@@ -204,7 +208,7 @@ void pTurn(int turnTo, int speed) {
 	pros::delay(commandPause);
 }
 
-void pDrive(float tiles, int speed){
+void pDrive(float tiles, int speed=driveSpeed){
 	int turnTo = tiles*onetile; //This is the amount of tiles that are desired, converted into encoder ticks
 	int minimumSpeed = 40;
 	int leftSpeed = speed;
@@ -280,8 +284,6 @@ void tower_auton(int ispeed, int lspeed) {
 
 void autonomous() {
 
-	int turnSpeed = 200;
-	int driveSpeed = 200;
 
 	if(leftTrain.isdrift()) {
 		leftTrain.drift();
@@ -312,92 +314,92 @@ pros::delay(1000);
 
 	//Get first ball
 	intake.spin(200);
-	pDrive(1.65,driveSpeed);
+	pDrive(1.65);
 	intake_ball();
 
 	//Turn and go to goal
-	pTurn(135,turnSpeed);
-	pDrive(1.30,driveSpeed);
+	pTurn(135);
+	pDrive(1.30);
 	score_red_ball(600);
 
 	//Backup from goal
-	pDrive(-1.2,driveSpeed);
+	pDrive(-1.2);
 
-	pTurn(263,turnSpeed);
+	pTurn(263);
 
 	intake.spin(200);
-	pDrive(1.47,driveSpeed);
+	pDrive(1.47);
 	intake_ball();
 
-	pTurn(180, turnSpeed);
+	pTurn(180);
 
-	pDrive(0.9,driveSpeed);
+	pDrive(0.9);
 
 	score_red_ball(600);
 
-	pDrive(-0.1,driveSpeed);
+	pDrive(-0.1,100);
 
-	pTurn(263,turnSpeed);
+	pTurn(263);
 
 	intake.spin(200);
-	pDrive(2.055,driveSpeed);
+	pDrive(2.055);
 	intake_ball();
 
 	pDrive(-0.8,driveSpeed);
 
-	pTurn(245,turnSpeed);
+	pTurn(245);
 
 	pDrive(1.05,driveSpeed);
 
 	score_red_ball(600);
 
-	pDrive(-0.2,driveSpeed);
+	pDrive(-0.2,100);
 
-	pTurn(350,turnSpeed);
+	pTurn(350);
 
 	intake.spin(200);
 	pDrive(2.1,driveSpeed);
 	intake_ball();
 
-	pTurn(263,turnSpeed);
+	pTurn(263);
 
-	pDrive(0.3,driveSpeed);
+	pDrive(0.3,100);
 
 	score_red_ball(600);
 
-	pDrive(-0.5,driveSpeed);
+	pDrive(-0.5,150);
 
-	pTurn(350,turnSpeed);
+	pTurn(350);
 
 	intake.spin(200);
-	pDrive(1.75,driveSpeed);
+	pDrive(1.75);
 	intake_ball();
 
-	pDrive(-1.2,driveSpeed);
+	pDrive(-1.2);
 
-	pTurn(330,turnSpeed);
+	pTurn(330);
 
-	pDrive(1.3,driveSpeed);
+	pDrive(1.3);
 
 	score_red_ball(600);
 
-	pDrive(-1,driveSpeed);
+	pDrive(-1);
 
-	pTurn(90,turnSpeed);
+	pTurn(90);
 
 	intake.spin(200);
-	pDrive(1.5,driveSpeed);
+	pDrive(1.5);
 	intake_ball();
 
-	pTurn(180,turnSpeed);
+	pTurn(180);
 
-	pDrive(0.7,driveSpeed);
+	pDrive(0.7);
 
-	pDrive(-0.3,driveSpeed);
+	pDrive(-0.3,100);
 
 	score_red_ball(600);
 
-	pDrive(-0.6,driveSpeed);
+	pDrive(-0.6);
 
 
 }
