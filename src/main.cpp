@@ -31,7 +31,7 @@ bool sp = false;
 int team_color = 2;
 
 
-int turnSpeed = 200;
+int turnSpeed = 90;
 int driveSpeed = 200;
 
 
@@ -67,6 +67,9 @@ void initialize() {
 	pros::lcd::initialize();
 
 	gyro.reset();
+	while(gyro.is_calibrating()) {
+		pros::delay(2);
+	}
 	vs.clear_led();
 	vs.set_signature(1, &BLUE_SIG);
 	vs.set_signature(2, &RED_SIG);
@@ -93,10 +96,12 @@ void competition_initialize() {}
 
 
 int getgyro() {
-	int facing = (int(gyro.get_rotation()) % 360);
+
+	/*int facing = (int(gyro.get_rotation()) % 360);
 	if(facing < 0) {
 		facing += 360;
-	}
+	}*/
+	int facing = gyro.get_heading();
 	return facing;
 }
 /**
@@ -217,6 +222,7 @@ void pDrive(float tiles, int speed=driveSpeed){
 	float Kp = 0.5; //This is the tuning constant for the P loop
 
 	while(abs(currentTurn)>=5) {
+		pros::lcd::set_text(3, "GYRO VALUE : " + std::to_string(getgyro()));
 		currentTurn = turnTo-leftTrain.getPos();
 		error = leftTrain.getPos()-rightTrain.getPos();
 
@@ -248,6 +254,8 @@ int get_ball_color() {
 }
 
 void score_red_ball(int speed) {
+	lift.spin(-600);
+	pros::delay(100);
 	lift.spin(speed);
 	pros::delay(1550);
 	lift.spin(0);
@@ -280,7 +288,35 @@ void tower_auton(int ispeed, int lspeed) {
 	lift.spin(0);
 }
 
+void ejectintakes() {
 
+	lift.unload(600);
+	pros::delay(500);
+	lift.spin(0);
+	/*
+	int multiplier =1;
+	do {
+		lift2.move_velocity(-600*multiplier);
+		intake.spin(200*multiplier);
+		pros::delay(100);
+		multiplier = (multiplier-1)^2;
+	} while(get_ball_color()!=2);
+
+	*/
+}
+
+void reset_gyro() {
+	stopbase();
+	rightTrain.resetEncoders();
+	leftTrain.resetEncoders();
+	pros::lcd::set_text(3, "CALIBRATION IN PROGRESS");
+	gyro.reset();
+	while(gyro.is_calibrating()) {
+		pros::delay(1);
+	}
+	pros::lcd::set_text(3, "CALIBRATION DONE");
+	pros::delay(50);
+}
 
 void autonomous() {
 
@@ -292,26 +328,10 @@ void autonomous() {
 		rightTrain.drift();
 	}
 
-	while(gyro.is_calibrating()) {
-		pros::delay(200);
-		pros::lcd::set_text(3, "CALIBRATING GYRO");
-	}
-	pros::lcd::set_text(3, "CALIBRATION DONE");
-pros::delay(1000);
-
-	//Initialization
-	lift.unload(600);
-	pros::delay(500);
-	lift.spin(0);
-	pros::delay(100);
-	lift.unload(600);
-	pros::delay(250);
-	lift.spin(0);
-	pros::delay(100);
-	lift.unload(600);
-	pros::delay(250);
-	lift.spin(0);
-
+	reset_gyro();
+	ejectintakes();
+	pros::delay(3000);
+	//ejectintakes();
 	//Get first ball
 	intake.spin(200);
 	pDrive(1.65);
@@ -319,51 +339,65 @@ pros::delay(1000);
 
 	//Turn and go to goal
 	pTurn(135);
-	pDrive(1.30);
+	pDrive(1.2);
 	score_red_ball(600);
 
 	//Backup from goal
-	pDrive(-1.2);
+	pDrive(-1.24);
 
 	pTurn(263);
-
 	intake.spin(200);
-	pDrive(1.47);
+	pDrive(1.4);
 	intake_ball();
 
 	pTurn(180);
 
-	pDrive(0.9);
+	pDrive(0.92);
 
 	score_red_ball(600);
 
-	pDrive(-0.1,100);
+	pDrive(-0.8,100);
 
-	pTurn(263);
-
+	//pTurn(263);
+	pTurn(230,75);
+	//pTurn(235,50);
 	intake.spin(200);
-	pDrive(2.055);
+	pDrive(2.3);
 	intake_ball();
+	/*rightTrain.rpm(150);
+	pros::delay(250);
+	rightTrain.rpm(0);
+	pros::delay(50);
+	*/
+/*
+	pDrive(-0.5,driveSpeed);
 
-	pDrive(-0.8,driveSpeed);
+	pTurn(235,100);
 
-	pTurn(245);
-
-	pDrive(1.05,driveSpeed);
-
+	pDrive(0.7,driveSpeed);
+*/
 	score_red_ball(600);
 
-	pDrive(-0.2,100);
+	//pDrive(-0.2,100);
 
-	pTurn(350);
+	pTurn(350,170);
+
+
+	leftTrain.rpm(-150);
+	rightTrain.rpm(-150);
+	pros::delay(1000);
+	stopbase();
+	pros::delay(50);
+	reset_gyro();
+	pros::delay(2000);
 
 	intake.spin(200);
-	pDrive(2.1,driveSpeed);
+	pDrive(2.7,driveSpeed);
 	intake_ball();
 
-	pTurn(263);
+	pTurn(270,160);
 
-	pDrive(0.3,100);
+	pDrive(0.1,100);
 
 	score_red_ball(600);
 
@@ -372,9 +406,17 @@ pros::delay(1000);
 	pTurn(350);
 
 	intake.spin(200);
-	pDrive(1.75);
+	pDrive(2.2,300);
 	intake_ball();
 
+leftTrain.rpm(-200);
+pros::delay(550);
+leftTrain.rpm(100);
+rightTrain.rpm(100);
+score_red_ball(600);
+leftTrain.rpm(-200);
+rightTrain.rpm(-200);
+/*
 	pDrive(-1.2);
 
 	pTurn(330);
@@ -400,7 +442,7 @@ pros::delay(1000);
 	score_red_ball(600);
 
 	pDrive(-0.6);
-
+*/
 
 }
 
@@ -461,7 +503,7 @@ void opcontrol() {
 
 		pros::lcd::set_text(1, "LEFT TRAIN" + std::to_string(leftTrain.getPos()));
 		pros::lcd::set_text(2, "RIGHT TRAIN" + std::to_string(rightTrain.getPos()));
-		pros::lcd::set_text(3,"GYRO: " + std::to_string(getgyro()));
+		pros::lcd::set_text(3, "GYRO: " + std::to_string(getgyro()));
 		pros::lcd::set_text(4, "TEAM COLOR: " + std::to_string(team_color));
 		pros::lcd::set_text(5, "COLOR: " + std::to_string(ballcol));
 
@@ -591,13 +633,14 @@ void opcontrol() {
 		leftTrain.resetEncoders();
 		rightTrain.resetEncoders();
 		}
-
+		/*
 		if(master.get_digital(DIGITAL_X)) {
 			tower_auton(200,600);
 		}
 		if(master.get_digital(DIGITAL_LEFT)) {
-			pTurn(90,150);
+			ejectintakes();
 		}
+		*/
 	}
 
 }
